@@ -140,6 +140,10 @@ const UserProfilePage: FunctionComponent<IProps> = ({userId}: IProps) => {
             uploadImage.click();
         });
 
+        (page.querySelector('#btnMoreImages') as HTMLButtonElement).addEventListener('click', function () {
+            window.open('https://github.com/BobHasNoSoul/jellyfin-avatars/tree/main/avatars','_blank');
+        });
+
         (page.querySelector('#uploadImage') as HTMLInputElement).addEventListener('change', function (evt: Event) {
             setFiles(evt);
         });
@@ -180,6 +184,12 @@ const UserProfilePage: FunctionComponent<IProps> = ({userId}: IProps) => {
                             type='button'
                             className='raised btnDeleteImage hide'
                             title='DeleteImage'
+                        />
+                        <ButtonElement
+                            type='button'
+                            id='btnMoreImages'
+                            className='raised'
+                            title='MoreImages'
                         />
                     </div>
                 </div>
