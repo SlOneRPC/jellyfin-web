@@ -232,8 +232,7 @@ export class UserSettings {
             return this.set('enableBackdrops', val.toString(), false);
         }
 
-        val = this.get('enableBackdrops', false);
-        return val === 'true';
+        return toBoolean(this.get('enableBackdrops', false), true);
     }
 
     /**
