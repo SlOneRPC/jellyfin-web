@@ -29,7 +29,13 @@
       "color": "#0c2450"
     }
   ],
-  "menuLinks": [],
+  "menuLinks": [
+    {
+      "name": "Request Content",
+      "icon": "add_box",
+      "url": "https://plex.righteous.cc/"
+    }
+  ],
   "servers": [],
   "plugins": [
     "playAccessValidation/plugin",
