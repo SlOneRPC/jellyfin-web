@@ -145,6 +145,10 @@ const UserProfile: FunctionComponent = () => {
             uploadImage.click();
         });
 
+        (page.querySelector('#btnMoreImages') as HTMLButtonElement).addEventListener('click', function () {
+            window.open('https://github.com/BobHasNoSoul/jellyfin-avatars/tree/main/avatars','_blank');
+        });
+
         (page.querySelector('#uploadImage') as HTMLInputElement).addEventListener('change', function (evt: Event) {
             setFiles(evt);
         });
@@ -192,6 +196,12 @@ const UserProfile: FunctionComponent = () => {
                             id='btnDeleteImage'
                             className='raised hide'
                             title='DeleteImage'
+                        />
+                        <ButtonElement
+                            type='button'
+                            id='btnMoreImages'
+                            className='raised'
+                            title='MoreImages'
                         />
                     </div>
                 </div>
