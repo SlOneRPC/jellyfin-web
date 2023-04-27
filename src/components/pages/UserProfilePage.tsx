@@ -140,7 +140,7 @@ const UserProfilePage: FunctionComponent<IProps> = ({userId}: IProps) => {
             uploadImage.click();
         });
 
-        (page.querySelector('#btnMoreImages') as HTMLButtonElement).addEventListener('click', function () {
+        (page.querySelector('.btnMoreImages') as HTMLButtonElement).addEventListener('click', function () {
             window.open('https://github.com/BobHasNoSoul/jellyfin-avatars/tree/main/avatars','_blank');
         });
 
@@ -187,8 +187,7 @@ const UserProfilePage: FunctionComponent<IProps> = ({userId}: IProps) => {
                         />
                         <ButtonElement
                             type='button'
-                            id='btnMoreImages'
-                            className='raised'
+                            className='raised btnMoreImages'
                             title='MoreImages'
                         />
                     </div>
