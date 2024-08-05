@@ -87,6 +87,9 @@
 - [JPUC1143](https://github.com/Jpuc1143)
 - [David Angel](https://github.com/davidangel)
 - [Pithaya](https://github.com/Pithaya)
+- [Chaitanya Shahare](https://github.com/Chaitanya-Shahare)
+- [Connor Smith](https://github.com/ConnorS1110)
+- [Venkat Karasani](https://github.com/venkat-karasani)
 
 ## Emby Contributors
 

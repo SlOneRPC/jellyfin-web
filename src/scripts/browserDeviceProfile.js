@@ -239,6 +239,8 @@ function supportsDolbyVision(options) {
 }
 
 function supportedDolbyVisionProfilesHevc(videoTestElement) {
+    if (browser.xboxOne) return [5, 8];
+
     const supportedProfiles = [];
     // Profiles 5/8 4k@60fps
     if (videoTestElement.canPlayType) {
@@ -247,9 +249,13 @@ function supportedDolbyVisionProfilesHevc(videoTestElement) {
             .replace(/no/, '')) {
             supportedProfiles.push(5);
         }
-        if (videoTestElement
-            .canPlayType('video/mp4; codecs="dvh1.08.09"')
-            .replace(/no/, '')) {
+        if (
+            videoTestElement
+                .canPlayType('video/mp4; codecs="dvh1.08.09"')
+                .replace(/no/, '')
+            // LG TVs from at least 2020 onwards should support profile 8, but they don't report it.
+            || (browser.web0sVersion >= 4)
+        ) {
             supportedProfiles.push(8);
         }
     }
@@ -610,15 +616,18 @@ export default function (options) {
     const hlsInFmp4VideoCodecs = [];
 
     if (canPlayAv1(videoTestElement)
-        && (browser.safari || (!browser.mobile && (browser.edgeChromium || browser.firefox || browser.chrome)))) {
+        && (browser.safari || (!browser.mobile && (browser.edgeChromium || browser.firefox || browser.chrome || browser.opera)))) {
         // disable av1 on non-safari mobile browsers since it can be very slow software decoding
         hlsInFmp4VideoCodecs.push('av1');
     }
 
     if (canPlayHevc(videoTestElement, options)
-        && (browser.edgeChromium || browser.safari || browser.tizen || browser.web0s || (browser.chrome && (!browser.android || browser.versionMajor >= 105)))) {
+        && (browser.edgeChromium || browser.safari || browser.tizen || browser.web0s || (browser.chrome && (!browser.android || browser.versionMajor >= 105)) || (browser.opera && !browser.mobile))) {
         // Chromium used to support HEVC on Android but not via MSE
         hlsInFmp4VideoCodecs.push('hevc');
+        if (browser.tizen || browser.web0s) {
+            hlsInTsVideoCodecs.push('hevc');
+        }
     }
 
     if (canPlayH264(videoTestElement)) {
@@ -629,9 +638,6 @@ export default function (options) {
 
     if (canPlayHevc(videoTestElement, options)) {
         mp4VideoCodecs.push('hevc');
-        if (browser.tizen || browser.web0s) {
-            hlsInTsVideoCodecs.push('hevc');
-        }
     }
 
     if (supportsMpeg2Video()) {
@@ -881,6 +887,48 @@ export default function (options) {
                 }
             ]
         });
+    }
+
+    if (browser.web0s) {
+        const flacConditions = [
+            // webOS doesn't seem to support FLAC with more than 2 channels
+            {
+                Condition: 'LessThanEqual',
+                Property: 'AudioChannels',
+                Value: '2',
+                IsRequired: false
+            }
+        ];
+
+        profile.CodecProfiles.push({
+            Type: 'VideoAudio',
+            Codec: 'flac',
+            Conditions: flacConditions
+        });
+
+        const flacTranscodingProfiles = [];
+
+        // Split each video transcoding profile with FLAC so that the containing FLAC is only applied to 2 channels audio
+        profile.TranscodingProfiles.forEach(transcodingProfile => {
+            if (transcodingProfile.Type !== 'Video') return;
+
+            const audioCodecs = transcodingProfile.AudioCodec.split(',');
+
+            if (!audioCodecs.includes('flac')) return;
+
+            const flacTranscodingProfile = { ...transcodingProfile };
+            flacTranscodingProfile.AudioCodec = 'flac';
+            flacTranscodingProfile.ApplyConditions = [
+                ...flacTranscodingProfile.ApplyConditions || [],
+                ...flacConditions
+            ];
+
+            flacTranscodingProfiles.push(flacTranscodingProfile);
+
+            transcodingProfile.AudioCodec = audioCodecs.filter(codec => codec != 'flac').join(',');
+        });
+
+        profile.TranscodingProfiles.push(...flacTranscodingProfiles);
     }
 
     let maxH264Level = 42;
@@ -1217,17 +1265,16 @@ export default function (options) {
     });
 
     if (browser.web0s && supportsDolbyVision(options)) {
-        // Disallow direct playing of DOVI media in containers not mp4.
-        // This paired with the "Prefer fMP4-HLS Container" client playback setting enables DOVI playback on webOS.
+        // Disallow direct playing of DOVI media in containers not ts or mp4.
         profile.CodecProfiles.push({
             Type: 'Video',
-            Container: '-mp4',
+            Container: '-mp4,ts',
             Codec: 'hevc',
             Conditions: [
                 {
                     Condition: 'EqualsAny',
                     Property: 'VideoRangeType',
-                    Value: 'SDR|HDR10|HLG',
+                    Value: hevcVideoRangeTypes.split('|').filter((v) => !v.startsWith('DOVI')).join('|'),
                     IsRequired: false
                 }
             ]

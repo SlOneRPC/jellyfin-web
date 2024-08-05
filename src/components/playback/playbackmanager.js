@@ -33,6 +33,10 @@ function enableLocalPlaylistManagement(player) {
     return player.isLocalPlayer;
 }
 
+function supportsPhysicalVolumeControl(player) {
+    return player.isLocalPlayer && appHost.supports('physicalvolumecontrol');
+}
+
 function bindToFullscreenChange(player) {
     if (Screenfull.isEnabled) {
         Screenfull.on('change', function () {
@@ -1157,7 +1161,7 @@ class PlaybackManager {
         self.setVolume = function (val, player) {
             player = player || self._currentPlayer;
 
-            if (player) {
+            if (player && !supportsPhysicalVolumeControl(player)) {
                 player.setVolume(val);
             }
         };
@@ -1165,15 +1169,17 @@ class PlaybackManager {
         self.getVolume = function (player) {
             player = player || self._currentPlayer;
 
-            if (player) {
+            if (player && !supportsPhysicalVolumeControl(player)) {
                 return player.getVolume();
             }
+
+            return 1;
         };
 
         self.volumeUp = function (player) {
             player = player || self._currentPlayer;
 
-            if (player) {
+            if (player && !supportsPhysicalVolumeControl(player)) {
                 player.volumeUp();
             }
         };
@@ -1181,7 +1187,7 @@ class PlaybackManager {
         self.volumeDown = function (player) {
             player = player || self._currentPlayer;
 
-            if (player) {
+            if (player && !supportsPhysicalVolumeControl(player)) {
                 player.volumeDown();
             }
         };
@@ -2284,33 +2290,18 @@ class PlaybackManager {
             // TODO: This should be the media type requested, not the original media type
             const mediaType = item.MediaType;
 
+            if (playOptions.fullscreen) {
+                loading.show();
+            }
+
             return runInterceptors(item, playOptions)
-                .then(() => {
-                    if (playOptions.fullscreen) {
-                        loading.show();
-                    }
-
-                    if (!isServerItem(item) || itemHelper.isLocalItem(item)) {
-                        return Promise.reject('skip bitrate detection');
-                    }
-
-                    return apiClient.getEndpointInfo().then((endpointInfo) => {
-                        if ((mediaType === 'Video' || mediaType === 'Audio') && appSettings.enableAutomaticBitrateDetection(endpointInfo.IsInNetwork, mediaType)) {
-                            return apiClient.detectBitrate().then((bitrate) => {
-                                appSettings.maxStreamingBitrate(endpointInfo.IsInNetwork, mediaType, bitrate);
-                                return bitrate;
-                            });
-                        }
-
-                        return Promise.reject('skip bitrate detection');
-                    });
-                })
-                .catch(() => getSavedMaxStreamingBitrate(apiClient, mediaType))
-                .then((bitrate) => {
-                    return playAfterBitrateDetect(bitrate, item, playOptions, onPlaybackStartedFn, prevSource);
-                })
                 .catch(onInterceptorRejection)
-                .finally(() => {
+                .then(() => detectBitrate(apiClient, item, mediaType))
+                .then((bitrate) => {
+                    return playAfterBitrateDetect(bitrate, item, playOptions, onPlaybackStartedFn, prevSource)
+                        .catch(onPlaybackRejection);
+                })
+                .catch(() => {
                     if (playOptions.fullscreen) {
                         loading.hide();
                     }
@@ -2328,7 +2319,13 @@ class PlaybackManager {
             Events.trigger(self, 'playbackcancelled');
         }
 
-        function onInterceptorRejection(e) {
+        function onInterceptorRejection() {
+            cancelPlayback();
+
+            return Promise.reject();
+        }
+
+        function onPlaybackRejection(e) {
             cancelPlayback();
 
             let displayErrorCode = 'ErrorDefault';
@@ -2362,8 +2359,6 @@ class PlaybackManager {
                     resolve();
                     return;
                 }
-
-                loading.hide();
 
                 const options = Object.assign({}, playOptions);
 
@@ -2500,6 +2495,29 @@ class PlaybackManager {
             } catch (e) {
                 console.error(`AutoSet - Caught unexpected error: ${e}`);
             }
+        }
+
+        function detectBitrate(apiClient, item, mediaType) {
+            // FIXME: This is gnarly, but don't want to change too much here in a bugfix
+            return Promise.resolve()
+                .then(() => {
+                    if (!isServerItem(item) || itemHelper.isLocalItem(item)) {
+                        return Promise.reject('skip bitrate detection');
+                    }
+
+                    return apiClient.getEndpointInfo()
+                        .then((endpointInfo) => {
+                            if ((mediaType === 'Video' || mediaType === 'Audio') && appSettings.enableAutomaticBitrateDetection(endpointInfo.IsInNetwork, mediaType)) {
+                                return apiClient.detectBitrate().then((bitrate) => {
+                                    appSettings.maxStreamingBitrate(endpointInfo.IsInNetwork, mediaType, bitrate);
+                                    return bitrate;
+                                });
+                            }
+
+                            return Promise.reject('skip bitrate detection');
+                        });
+                })
+                .catch(() => getSavedMaxStreamingBitrate(apiClient, mediaType));
         }
 
         function playAfterBitrateDetect(maxBitrate, item, playOptions, onPlaybackStartedFn, prevSource) {
@@ -3282,18 +3300,21 @@ class PlaybackManager {
             const streamInfo = error.streamInfo || getPlayerData(player).streamInfo;
 
             if (streamInfo?.url) {
+                const isAlreadyFallbacking = streamInfo.url.toLowerCase().includes('transcodereasons');
                 const currentlyPreventsVideoStreamCopy = streamInfo.url.toLowerCase().indexOf('allowvideostreamcopy=false') !== -1;
                 const currentlyPreventsAudioStreamCopy = streamInfo.url.toLowerCase().indexOf('allowaudiostreamcopy=false') !== -1;
 
                 // Auto switch to transcoding
                 if (enablePlaybackRetryWithTranscoding(streamInfo, errorType, currentlyPreventsVideoStreamCopy, currentlyPreventsAudioStreamCopy)) {
                     const startTime = getCurrentTicks(player) || streamInfo.playerStartPositionTicks;
+                    const isRemoteSource = streamInfo.item.LocationType === 'Remote';
+                    // force transcoding and only allow remuxing for remote source like liveTV, but only for initial trial
+                    const tryVideoStreamCopy = isRemoteSource && !isAlreadyFallbacking;
 
                     changeStream(player, startTime, {
-                        // force transcoding
                         EnableDirectPlay: false,
-                        EnableDirectStream: false,
-                        AllowVideoStreamCopy: false,
+                        EnableDirectStream: tryVideoStreamCopy,
+                        AllowVideoStreamCopy: tryVideoStreamCopy,
                         AllowAudioStreamCopy: currentlyPreventsAudioStreamCopy || currentlyPreventsVideoStreamCopy ? false : null
                     });
 
