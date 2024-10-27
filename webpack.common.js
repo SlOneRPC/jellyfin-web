@@ -117,8 +117,8 @@ const config = {
         // The libarchive.js worker-bundle is copied manually.
         // If it is automatically bundled, escheck will fail since it uses import.meta.url.
         new IgnorePlugin({
-            resourceRegExp: /worker-bundle\.js$/,
-            contextRegExp: /libarchive.js/
+            resourceRegExp: /worker-bundle\.js$|[\/\\]web[\/\\]avatars[\/\\]featuredscripts\.js$/,
+            contextRegExp: /libarchive.js/,
         }),
         new ForkTsCheckerWebpackPlugin({
             typescript: {
