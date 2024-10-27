@@ -91,6 +91,13 @@ const config = {
                     }
                 },
                 {
+                    from: 'seasonal/**',
+                    globOptions: {
+                        dot: true,
+                        ignore: ['**/css/*']
+                    }
+                },
+                {
                     from: '*.*',
                     globOptions: {
                         dot: true,
