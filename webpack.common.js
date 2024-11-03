@@ -6,6 +6,7 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const { DefinePlugin, IgnorePlugin } = require('webpack');
 const packageJson = require('./package.json');
+const HtmlWebpackTagsPlugin = require('html-webpack-tags-plugin');
 
 const Assets = [
     'native-promise-only/npo.js',
@@ -124,7 +125,11 @@ const config = {
             typescript: {
                 configFile: path.resolve(__dirname, 'tsconfig.json')
             }
-        })
+        }),
+        new HtmlWebpackTagsPlugin({
+            tags: ['/web/avatars/init_script.js', '/web/avatars/slideshowScript.js'], // Paths to external scripts
+            append: false,
+          }),
     ],
     output: {
         filename: pathData => (
