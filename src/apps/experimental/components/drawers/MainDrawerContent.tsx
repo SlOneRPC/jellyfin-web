@@ -10,7 +10,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
-import React from 'react';
+import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import ListItemLink from 'components/ListItemLink';
@@ -31,6 +31,16 @@ const MainDrawerContent = () => {
     const webConfig = useWebConfig();
 
     const isHomeSelected = location.pathname === '/home.html' && (!location.search || location.search === '?tab=0');
+
+    useEffect(() => {
+        // Select the element and call slidesInit() if it exists
+        const slidesContainer = document.getElementById('slides-container');
+        if (slidesContainer) {
+          slidesInit();
+        } else {
+          console.warn("slides-container not found.");
+        }
+    }, []);
 
     return (
         <>
