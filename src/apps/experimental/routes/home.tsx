@@ -139,13 +139,6 @@ const Home = () => {
         void onResume();
         return () => {
             onPause();
-            // Select the element and call slidesInit() if it exists
-            const slidesContainer = document.getElementById('slides-container');
-            if (slidesContainer) {
-                slidesInit();
-            } else {
-                console.warn("slides-container not found.");
-            }
         };
     }, [ onPause, onResume, onSetTabs ]);
 
