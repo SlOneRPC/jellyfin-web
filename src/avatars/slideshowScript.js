@@ -340,4 +340,6 @@ const slidesInit = () => {
         console.error('No credentials or API key found.');
     }
 }
+// Attach to the global scope
+window.slidesInit = slidesInit;
 slidesInit();
