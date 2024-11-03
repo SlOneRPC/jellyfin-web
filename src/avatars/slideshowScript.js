@@ -339,5 +339,9 @@ const slidesInit = () => {
         console.error('No credentials or API key found.');
     }
 }
-// Attach to the global scope
-window.slidesInit = slidesInit;
+document.addEventListener("DOMContentLoaded", function() {
+    const slidesContainer = document.getElementById('slides-container');
+    if (slidesContainer) {
+        slidesInit();
+    }
+});
