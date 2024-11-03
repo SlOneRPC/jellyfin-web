@@ -340,6 +340,7 @@ const slidesInit = () => {
     }
 }
 document.addEventListener("DOMContentLoaded", function() {
+    console.log("Creating slides container ....");
     const slidesContainer = document.getElementById('slides-container');
     if (slidesContainer) {
         slidesInit();
