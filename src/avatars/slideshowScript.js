@@ -1,4 +1,5 @@
 const slidesInit = () => {
+    console.log("Creating slides....");
     const shuffleInterval = 10000;
     const moviesToFetch = 15;
     const seriesToFetch = 15;
