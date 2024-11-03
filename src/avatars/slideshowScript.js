@@ -1,5 +1,4 @@
 const slidesInit = () => {
-    console.log("Creating slides....");
     const shuffleInterval = 10000;
     const moviesToFetch = 15;
     const seriesToFetch = 15;
@@ -342,4 +341,3 @@ const slidesInit = () => {
 }
 // Attach to the global scope
 window.slidesInit = slidesInit;
-slidesInit();
