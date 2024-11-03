@@ -340,3 +340,4 @@ const slidesInit = () => {
         console.error('No credentials or API key found.');
     }
 }
+slidesInit();
